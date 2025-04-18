@@ -1,0 +1,7 @@
+browser-use
+playwright
+langchain
+langchain-anthropic
+dotenv
+langchain-groq
+gradio
