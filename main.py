@@ -7,7 +7,7 @@ def run_agent(prompt):
 with gr.Blocks() as interface:
     with gr.Row():
         # left col
-        with gr.Column(scale=1):
+        with gr.Column(scale=0.5):
             gr.Markdown("### Enter Prompt")
             prompt_input = gr.Textbox(lines=2, placeholder="e.g., Login to Canvas...", label="Prompt")
 
@@ -17,9 +17,9 @@ with gr.Blocks() as interface:
             agent_logs = gr.Textbox(label="Browser Agent Output", lines=20, interactive=False)
 
         # right col
-        with gr.Column(scale=2):
+        with gr.Column(scale=3):
             gr.Markdown("### Browser View")
-            gr.HTML("<iframe src='http://localhost:6080/vnc_auto.html' width='100%' height='700px'></iframe>")
+            gr.HTML("<iframe src='http://localhost:6080/vnc_auto.html' width='1280px' height='720px'></iframe>")
 
     submit_btn.click(fn=run_agent, inputs=prompt_input, outputs=agent_logs)
 

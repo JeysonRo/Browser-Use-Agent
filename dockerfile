@@ -60,6 +60,7 @@ RUN mkdir -p ~/.vnc && \
 # Replace launch.sh with direct websockify command
 RUN echo "[supervisord]\nnodaemon=true\n" > /etc/supervisord.conf && \
     echo "[program:Xvfb]\ncommand=/usr/bin/Xvfb :1 -screen 0 1280x720x16" >> /etc/supervisord.conf && \
+    # echo "[program:Xvfb]\ncommand=/usr/bin/Xvfb :1 -screen 0 1920x1080x24" >> /etc/supervisord.conf && \
     echo "\n[program:x11vnc]\ncommand=/usr/bin/x11vnc -forever -usepw -display :1 -passwd 1234" >> /etc/supervisord.conf && \
     echo "\n[program:xfce4]\ncommand=startxfce4" >> /etc/supervisord.conf && \
     echo "\n[program:novnc]" >> /etc/supervisord.conf && \
@@ -71,6 +72,21 @@ RUN echo "[supervisord]\nnodaemon=true\n" > /etc/supervisord.conf && \
 RUN ln -sf /usr/local/bin/python3.12 /usr/bin/python && \
 ln -sf /usr/local/bin/python3.12 /usr/bin/python3
 
+# Create working directory
+WORKDIR /root
+
+# Copy requirements.txt and install dependencies
+COPY requirements.txt /root/
+RUN pip install -r requirements.txt
+RUN python -m playwright install chromium
+
+# Create default files
+RUN echo "# Default test file" > /root/test.py && \
+    echo "# Default environment file" > /root/.env
+
+# Note: Since we're using default files, the user can still mount their own files
+# when needed using docker run -v command, but they're not required anymore
+
 EXPOSE 6080
 
 CMD ["/usr/local/bin/supervisord", "-c", "/etc/supervisord.conf"]
@@ -79,7 +95,7 @@ CMD ["/usr/local/bin/supervisord", "-c", "/etc/supervisord.conf"]
 # run this
 # docker build -t browser .
 # docker build --platform=linux/amd64 -t browser-vnc .
-# docker run -d -p 6080:80 -p 5900:5900 --name browser-container browser
+# docker run -d -p 6080:6080 --name browser-container browser
 
 # docker rm browser-container
 # docker run -d -p 6080:6080 --name browser-container browser   
@@ -88,3 +104,9 @@ CMD ["/usr/local/bin/supervisord", "-c", "/etc/supervisord.conf"]
 # go into docker container using [docker exec -it browser-container bash]
 # apt update and ensure python3 and python3-pip are installed
 # pip install playwright browser-use
+
+# Simple run command (no volume mounts needed anymore):
+# docker run -d -p 6080:6080 --name browser-container browser
+#
+# Optional: still mount custom files if needed:
+# docker run -d -p 6080:6080 --name browser-container -v "$(pwd)/test.py:/root/test.py" -v "$(pwd)/.env:/root/.env" browser
