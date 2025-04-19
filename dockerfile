@@ -59,7 +59,7 @@ RUN mkdir -p ~/.vnc && \
 # Supervisor configuration for GUI + VNC + noVNC
 # Replace launch.sh with direct websockify command
 RUN echo "[supervisord]\nnodaemon=true\n" > /etc/supervisord.conf && \
-    echo "[program:Xvfb]\ncommand=/usr/bin/Xvfb :1 -screen 0 1280x720x16" >> /etc/supervisord.conf && \
+    echo "[program:Xvfb]\ncommand=/usr/bin/Xvfb :1 -screen 0 1024x576x16" >> /etc/supervisord.conf && \
     # echo "[program:Xvfb]\ncommand=/usr/bin/Xvfb :1 -screen 0 1920x1080x24" >> /etc/supervisord.conf && \
     echo "\n[program:x11vnc]\ncommand=/usr/bin/x11vnc -forever -usepw -display :1 -passwd 1234" >> /etc/supervisord.conf && \
     echo "\n[program:xfce4]\ncommand=startxfce4" >> /etc/supervisord.conf && \
@@ -75,14 +75,15 @@ ln -sf /usr/local/bin/python3.12 /usr/bin/python3
 # Create working directory
 WORKDIR /root
 
-# Copy requirements.txt and install dependencies
+# Copy necessary files and  install dependencies
+COPY test.py /root/
+COPY .env /root/
 COPY requirements.txt /root/
 RUN pip install -r requirements.txt
 RUN python -m playwright install chromium
 
 # Create default files
-RUN echo "# Default test file" > /root/test.py && \
-    echo "# Default environment file" > /root/.env
+
 
 # Note: Since we're using default files, the user can still mount their own files
 # when needed using docker run -v command, but they're not required anymore
@@ -99,7 +100,6 @@ CMD ["/usr/local/bin/supervisord", "-c", "/etc/supervisord.conf"]
 
 # docker rm browser-container
 # docker run -d -p 6080:6080 --name browser-container browser   
-# password is 1234
 
 # go into docker container using [docker exec -it browser-container bash]
 # apt update and ensure python3 and python3-pip are installed
