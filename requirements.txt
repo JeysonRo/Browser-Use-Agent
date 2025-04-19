@@ -5,3 +5,5 @@ langchain-anthropic
 dotenv
 langchain-groq
 gradio
+langgraph
+pydantic
