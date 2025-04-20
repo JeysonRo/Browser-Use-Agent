@@ -1,4 +1,10 @@
 venv/
+<<<<<<< Updated upstream
 .env
 test.py
 __pycache__/
+=======
+*.env
+test.py
+BrowserUseAgent/
+>>>>>>> Stashed changes
