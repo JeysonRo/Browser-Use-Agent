@@ -8,18 +8,10 @@ from typing import Annotated, Optional
 from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage
 import os
-import threading
-import time
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
-
-# Global variables for streaming
-current_logs = ""
-is_processing = False
-graph = None
-config = None
 
 # Get available models from .env
 def get_available_models():
@@ -58,77 +50,32 @@ def initialize_graph():
     return graph
 
 
-def get_current_logs():
-    """Function to get current logs for streaming"""
-    global current_logs, is_processing
-    while is_processing:
-        yield current_logs
-        time.sleep(0.5)  # Update every 0.5 seconds
-    yield current_logs  # Final yield after processing is done
-
-
-def process_in_background(prompt, username, password, credentials_enabled, model_key):
-    """Process the agent in a background thread"""
-    global current_logs, is_processing
+def invoke_prompt(prompt, username=None, password=None, credentials_enabled=False, model_key=None):
+    # initialize the state with the prompt
+    initial_state = {
+        "messages": [HumanMessage(content=prompt)],
+        "steps": "",
+        "credentials": None,
+        "model": model_key
+    }
     
-    # Reset logs
-    current_logs = "Starting..."
-    is_processing = True
-    
-    try:
-        # initialize the state with the prompt
-        initial_state = {
-            "messages": [HumanMessage(content=prompt)],
-            "steps": "",
-            "credentials": None,
-            "model": model_key
+    # Add credentials only if enabled and provided
+    if credentials_enabled and username and password:
+        initial_state["credentials"] = {
+            "username": username,
+            "password": password
         }
-        
-        # Add credentials only if enabled and provided
-        if credentials_enabled and username and password:
-            initial_state["credentials"] = {
-                "username": username,
-                "password": password
-            }
-        
-        # Get available models
-        if model_key:
-            # Update environment variable to the selected model
-            os.environ["MODEL_SELECTED"] = os.environ.get(model_key, "")
-        
-        # Custom callback to update logs
-        def update_logs_callback(state):
-            global current_logs
-            if "steps" in state and state["steps"]:
-                current_logs = state["steps"]
-            return state
-        
-        # Add the callback
-        modified_config = dict(config)
-        modified_config["callbacks"] = [update_logs_callback]
-        
-        # invoke the graph with the initial state
-        output = graph.invoke(initial_state, modified_config)
-        
-        # Update final logs
-        current_logs = output["steps"]
-    except Exception as e:
-        current_logs += f"\n\nError: {str(e)}"
-    finally:
-        is_processing = False
-
-
-def invoke_prompt_streaming(prompt, username=None, password=None, credentials_enabled=False, model_key=None):
-    """Start background processing and return a streaming generator"""
-    # Start processing in background
-    thread = threading.Thread(
-        target=process_in_background,
-        args=(prompt, username, password, credentials_enabled, model_key)
-    )
-    thread.start()
     
-    # Return generator that will stream results
-    return get_current_logs()
+    # Get available models
+    if model_key:
+        # Update environment variable to the selected model
+        os.environ["MODEL_SELECTED"] = os.environ.get(model_key, "")
+    
+    # invoke the graph with the initial state
+    output = graph.invoke(initial_state, config)
+    # print(output["steps"])
+    # return the steps from the output
+    return output["steps"]
 
 
 def gradio_setup():
@@ -192,7 +139,7 @@ def gradio_setup():
         )
 
         submit_btn.click(
-            fn=invoke_prompt_streaming, 
+            fn=invoke_prompt, 
             inputs=[prompt_input, username_input, password_input, credentials_enabled, model_dropdown],
             outputs=agent_logs
         )
@@ -201,8 +148,8 @@ def gradio_setup():
 
 # main
 if __name__ == "__main__":
-    graph = initialize_graph()  # initialize graph
-    config = {"configurable": {"thread_id": "browser_use"}}  # define config
-    gradio_setup()  # set up gradio interface
+    graph = initialize_graph() #initialize graph
+    config = {"configurable": {"thread_id": "browser_use"}} # define config
+    gradio_setup() # set up gradio interface
 
 
