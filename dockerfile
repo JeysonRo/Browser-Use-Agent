@@ -64,7 +64,9 @@ RUN echo "[supervisord]\nnodaemon=true\n" > /etc/supervisord.conf && \
     echo "\n[program:x11vnc]\ncommand=/usr/bin/x11vnc -forever -usepw -display :1 -passwd 1234" >> /etc/supervisord.conf && \
     echo "\n[program:xfce4]\ncommand=startxfce4" >> /etc/supervisord.conf && \
     echo "\n[program:novnc]" >> /etc/supervisord.conf && \
-    echo "command=/usr/local/bin/websockify 6080 localhost:5900 --web=/usr/share/novnc" >> /etc/supervisord.conf
+    echo "command=/usr/local/bin/websockify 6080 localhost:5900 --web=/usr/share/novnc" >> /etc/supervisord.conf && \
+    echo "\n[program:chromium]" >> /etc/supervisord.conf && \
+    echo "command=chromium-browser --no-sandbox --remote-debugging-address=0.0.0.0 --remote-debugging-port=9222" >> /etc/supervisord.conf
 
 
 
@@ -88,7 +90,7 @@ RUN python -m playwright install chromium
 # Note: Since we're using default files, the user can still mount their own files
 # when needed using docker run -v command, but they're not required anymore
 
-EXPOSE 6080
+EXPOSE 6080 9222
 
 CMD ["/usr/local/bin/supervisord", "-c", "/etc/supervisord.conf"]
 
@@ -96,17 +98,17 @@ CMD ["/usr/local/bin/supervisord", "-c", "/etc/supervisord.conf"]
 # run this
 # docker build -t browser .
 # docker build --platform=linux/amd64 -t browser-vnc .
-# docker run -d -p 6080:6080 --name browser-container browser
+# docker run -d -p 6080:6080 -p 9222:9222 --name browser-container browser
 
 # docker rm browser-container
-# docker run -d -p 6080:6080 --name browser-container browser   
+# docker run -d -p 6080:6080 -p 9222:9222 --name browser-container browser   
 
 # go into docker container using [docker exec -it browser-container bash]
 # apt update and ensure python3 and python3-pip are installed
 # pip install playwright browser-use
 
 # Simple run command (no volume mounts needed anymore):
-# docker run -d -p 6080:6080 --name browser-container browser
+# docker run -d -p 6080:6080 -p 9222:9222 --name browser-container browser
 #
 # Optional: still mount custom files if needed:
-# docker run -d -p 6080:6080 --name browser-container -v "$(pwd)/test.py:/root/test.py" -v "$(pwd)/.env:/root/.env" browser
+# docker run -d -p 6080:6080 -p 9222:9222 --name browser-container -v "$(pwd)/test.py:/root/test.py" -v "$(pwd)/.env:/root/.env" browser

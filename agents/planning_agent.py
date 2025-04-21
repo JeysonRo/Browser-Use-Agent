@@ -6,12 +6,6 @@ import os
 load_dotenv()
 # set up apis
 groq_api_key = os.getenv("GROQ_API_KEY")
-groq_model = os.getenv("MODEL_Z")
-
-# set up llm
-groq = ChatGroq(model=groq_model,
-                api_key=groq_api_key,
-                temperature=0)
 
 def planning_agent(state):
     """
@@ -25,6 +19,22 @@ def planning_agent(state):
         dict: Updated state with new messages and steps
     """
     messages = state["messages"]
+    
+    # Get model from state or default to the compound model
+    model_key = state.get("model")
+    if model_key and model_key in os.environ:
+        groq_model = os.environ[model_key]
+    else:
+        # Use Compound model as default
+        groq_model = os.getenv("MODEL_COMPOUND")
+    
+    # Log which model is being used
+    print(f"Using model: {groq_model}")
+    
+    # set up llm with the chosen model
+    groq = ChatGroq(model=groq_model,
+                   api_key=groq_api_key,
+                   temperature=0)
 
     # set up system prompt
     system_prompt = """
